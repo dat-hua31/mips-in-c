@@ -11,7 +11,7 @@ Wire nand_gate(Wire a, Wire b) {
   return !(a & b);
 }
 Wire32 nand_gate32(Wire32 a, Wire32 b) {
-  return (Wire32){ .value = ~(a.value & b.value) };
+  return ~(a & b);
 }
 ```
 
