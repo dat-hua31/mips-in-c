@@ -1,93 +1,13 @@
 ////////////////////////////////////////////////////////////
 //
-// SECTION 1: PRIMITIVE & COMBINATIONAL FOUNDATION
+// SECTION 0: TYPE CONVENTIONS
 //
 ////////////////////////////////////////////////////////////
 
 #include <stdbool.h>
-
-
-// NAND Gate: Where we start
 typedef bool Wire;
 
-Wire nand_gate(Wire a, Wire b) {
-  return !(a & b);
-}
-
-
-// NOT Gate
-Wire not_gate(Wire a) {
-  return nand_gate(a, a);
-}
-
-
-// AND Gate
-Wire and_gate(Wire a, Wire b) {
-  return not_gate(nand_gate(a, b));
-}
-
-
-// OR Gate
-Wire or_gate(Wire a, Wire b) {
-  return nand_gate(not_gate(a), not_gate(b));
-}
-
-
-// XOR Gate
-Wire xor_gate(Wire a, Wire b) {
-  return or_gate(
-           and_gate(a, not_gate(b)),
-           and_gate(not_gate(a), b));
-}
-
-
-// XNOR Gate
-Wire xnor_gate(Wire a, Wire b){
-  return not_gate(xor_gate(a, b));
-}
-
-
-// 2-to-1 MUX
-Wire mux2(Wire d0, Wire d1, Wire s) {
-  return or_gate(
-           and_gate(d0, not_gate(s)),
-           and_gate(d1, s));
-}
-
-
-// 4-to-1 MUX
-Wire mux4(Wire d0, Wire d1, Wire d2, Wire d3, Wire s0, Wire s1) {
-  Wire p0 = and_gate(d0, and_gate(not_gate(s1), not_gate(s0)));
-  Wire p1 = and_gate(d1, and_gate(not_gate(s1), s0));
-  Wire p2 = and_gate(d2, and_gate(s1, not_gate(s0)));
-  Wire p3 = and_gate(d3, and_gate(s1, s0));
-  return or_gate(or_gate(p0, p1), or_gate(p2, p3));
-}
-
-
-// Full Adder
-typedef struct {
-  Wire sum;
-  Wire cout;
-} FAResult;
-
-FAResult full_adder(Wire a, Wire b, Wire cin) {
-  Wire a_xor_b = xor_gate(a, b);
-  Wire sum = xor_gate(cin, a_xor_b);
-  Wire cout = or_gate(and_gate(a, b), and_gate(cin, a_xor_b));
-  return (FAResult){sum, cout};
-}
-
-////////////////////////////////////////////////////////////
-//
-// SECTION 2: 32-BIT ALU & ARITHMETIC ENGINE
-//
-////////////////////////////////////////////////////////////
-
 #include <stdint.h>
-
-
-// 32-Bit Ripple-Carry Adder
 typedef union {
   uint32_t value;
   struct {
@@ -142,6 +62,108 @@ void wire32_set(Wire32* w, int i, Wire val) {
   }
 }
 
+////////////////////////////////////////////////////////////
+//
+// SECTION 1: PRIMITIVE & COMBINATIONAL FOUNDATION
+//
+////////////////////////////////////////////////////////////
+
+// NAND Gate: Where we start
+Wire nand_gate(Wire a, Wire b) {
+  return !(a & b);
+}
+Wire32 nand_gate32(Wire32 a, Wire32 b) {
+  return (Wire32){ .value = ~(a.value & b.value) };
+}
+
+
+// NOT Gate
+Wire not_gate(Wire a) {
+  return nand_gate(a, a);
+}
+Wire32 not_gate32(Wire32 a) {
+  return nand_gate32(a, a);
+}
+
+
+// AND Gate
+Wire and_gate(Wire a, Wire b) {
+  return not_gate(nand_gate(a, b));
+}
+Wire32 and_gate32(Wire32 a, Wire32 b) {
+  return not_gate32(nand_gate32(a, b));
+}
+
+
+// OR Gate
+Wire or_gate(Wire a, Wire b) {
+  return nand_gate(not_gate(a), not_gate(b));
+}
+Wire32 or_gate32(Wire32 a, Wire32 b) {
+  return nand_gate32(not_gate32(a), not_gate32(b));
+}
+
+
+// XOR Gate
+Wire xor_gate(Wire a, Wire b) {
+  return or_gate(
+           and_gate(a, not_gate(b)),
+           and_gate(not_gate(a), b));
+}
+Wire32 xor_gate32(Wire32 a, Wire32 b) {
+  return or_gate32(
+           and_gate32(a, not_gate32(b)),
+           and_gate32(not_gate32(a), b));
+}
+
+
+// XNOR Gate
+Wire xnor_gate(Wire a, Wire b){
+  return not_gate(xor_gate(a, b));
+}
+Wire32 xnor_gate32(Wire32 a, Wire32 b){
+  return not_gate32(xor_gate32(a, b));
+}
+
+
+// 2-to-1 MUX
+Wire mux2(Wire d0, Wire d1, Wire s) {
+  return or_gate(
+           and_gate(d0, not_gate(s)),
+           and_gate(d1, s));
+}
+
+
+// 4-to-1 MUX
+Wire mux4(Wire d0, Wire d1, Wire d2, Wire d3, Wire s0, Wire s1) {
+  Wire p0 = and_gate(d0, and_gate(not_gate(s1), not_gate(s0)));
+  Wire p1 = and_gate(d1, and_gate(not_gate(s1), s0));
+  Wire p2 = and_gate(d2, and_gate(s1, not_gate(s0)));
+  Wire p3 = and_gate(d3, and_gate(s1, s0));
+  return or_gate(or_gate(p0, p1), or_gate(p2, p3));
+}
+
+
+// Full Adder
+typedef struct {
+  Wire sum;
+  Wire cout;
+} FAResult;
+
+FAResult full_adder(Wire a, Wire b, Wire cin) {
+  Wire a_xor_b = xor_gate(a, b);
+  Wire sum = xor_gate(cin, a_xor_b);
+  Wire cout = or_gate(and_gate(a, b), and_gate(cin, a_xor_b));
+  return (FAResult){sum, cout};
+}
+
+////////////////////////////////////////////////////////////
+//
+// SECTION 2: 32-BIT ALU & ARITHMETIC ENGINE
+//
+////////////////////////////////////////////////////////////
+
+// 32-Bit Ripple-Carry Adder
 typedef struct {
   Wire32 sum;
   Wire cout;
@@ -161,7 +183,21 @@ RCAResult ripple_carry_adder(Wire32 a, Wire32 b, Wire cin) {
 }
 
 
-//
+// 32-Bit Subtractor 
+typedef struct {
+  Wire32 diff;
+  Wire cout;
+} SBTResult;
+
+SBTResult subtractor(Wire32 a, Wire32 b) {
+  Wire32 inv_b = not_gate32(b);
+  RCAResult rca = ripple_carry_adder(a, inv_b, 1);
+  return (SBTResult){rca.sum, rca.cout};
+}
+
+
+// ALU 
+
 
 ////////////////////////////////////////////////////////////
 //
@@ -226,7 +262,67 @@ void run_rca_test_suite() {
   printf("==================================================\n");
 }
 
+bool run_sbt_test(uint32_t a, uint32_t b) {
+  printf("======= TESTING SUBTRACTOR (%u - %u) =======\n", a, b);
+  uint32_t expected_diff = a - b;
+  Wire expected_cout = (a >= b) ? 1 : 0;
+  printf("Expected diff: %u\n", expected_diff);
+  printf("Expected carry out: %u\n", expected_cout);
+
+  Wire32 wire32_a = { .value = a };
+  Wire32 wire32_b = { .value = b };
+  SBTResult result = subtractor(wire32_a, wire32_b);
+  printf("Diff: %u\n", result.diff.value);
+  printf("Carry out: %u\n", result.cout);
+
+  bool match = (expected_diff == result.diff.value) && (expected_cout == result.cout);
+  printf("Match: %s\n", match ? "YES" : "NO");
+  printf("\n");
+  return match;
+}
+
+void run_sbt_test_suite() {
+  int passed = 0;
+  int total = 0;
+
+  #define RUN_SBT_TEST(a, b) do { \
+    total++; \
+    if (run_sbt_test(a, b)) { \
+      passed++; \
+    } \
+  } while(0)
+
+  // Basic cases
+  RUN_SBT_TEST(0, 0);
+  RUN_SBT_TEST(5, 3);
+  RUN_SBT_TEST(3, 5);          // Tests borrow (cout = 0)
+  RUN_SBT_TEST(10, 10);
+
+  // Boundary cases
+  RUN_SBT_TEST(0xFFFFFFFF, 0);
+  RUN_SBT_TEST(0, 0xFFFFFFFF); // Tests borrow
+  RUN_SBT_TEST(0xFFFFFFFF, 1);
+  RUN_SBT_TEST(0x00000001, 0xFFFFFFFF); // Tests borrow
+
+  // Bit pattern & Hex edge cases
+  RUN_SBT_TEST(0x12345678, 0x00001234);
+  RUN_SBT_TEST(0x55555555, 0xAAAAAAAA);
+  RUN_SBT_TEST(0xAAAAAAAA, 0x55555555);
+  RUN_SBT_TEST(0x80000000, 0x00000001);
+  RUN_SBT_TEST(0x00000000, 0x80000000);
+  RUN_SBT_TEST(0xDEADBEEF, 0xCAFEBABE);
+  RUN_SBT_TEST(0xCAFEBABE, 0xDEADBEEF);
+
+  #undef RUN_SBT_TEST
+
+  printf("==================================================\n");
+  printf("TEST SUITE SUMMARY: %d / %d TESTS PASSED\n", passed, total);
+  printf("==================================================\n");
+}
+
+
 int main() {
   // run_rca_test_suite();
+  // run_sbt_test_suite();
   return 0;
 }
