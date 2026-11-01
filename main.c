@@ -171,7 +171,7 @@ RCAResult ripple_carry_adder(Wire32 a, Wire32 b, Wire cin) {
 
 #include <stdio.h>
 
-void run_ripple_carry_adder_test(uint32_t a, uint32_t b, Wire cin) {
+void run_rca_test(uint32_t a, uint32_t b, Wire cin) {
   printf("======= TESTING RIPPLE-CARRY ADDER (%u + %u + Cin:%u) =======\n", a, b, cin);
   uint32_t expected_sum = a + b + cin;
   uint64_t expected_sum_extended = (uint64_t)a + (uint64_t)b + (uint64_t)cin;
@@ -190,9 +190,26 @@ void run_ripple_carry_adder_test(uint32_t a, uint32_t b, Wire cin) {
   printf("=======================================================\n");
 }
 
+void run_rca_test_suite() {
+  run_rca_test(0, 0, 0);
+  run_rca_test(0, 0, 1);
+  run_rca_test(1, 1, 0);
+  run_rca_test(5, 10, 1);
+  run_rca_test(12323, 622331, 0);
+  run_rca_test(0xFFFFFFFF, 0, 0);
+  run_rca_test(0xFFFFFFFF, 1, 0); 
+  run_rca_test(0xFFFFFFFF, 0, 1);
+  run_rca_test(0xFFFFFFFF, 0xFFFFFFFF, 1);
+  run_rca_test(0x12345678, 0x57654321, 1);
+  run_rca_test(0x55555555, 0xAAAAAAAA, 0); 
+  run_rca_test(0x55555555, 0xAAAAAAAA, 1);
+  run_rca_test(0x80000000, 0x80000000, 0);
+  run_rca_test(0x7FFFFFFF, 0x00000001, 0);
+  run_rca_test(0xDEADBEEF, 0xCAFEBABE, 0);
+  run_rca_test(0xDEADBEEF, 0xCAFEBABE, 1);
+}
+
 int main() {
-  run_ripple_carry_adder_test(12323, 622331, 0);
-  run_ripple_carry_adder_test(0xFFFFFFFF, 1, 0);
-  run_ripple_carry_adder_test(0x12345678, 0x57654321, 1);
+  run_rca_test_suite();
   return 0;
 }
