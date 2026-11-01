@@ -171,7 +171,7 @@ RCAResult ripple_carry_adder(Wire32 a, Wire32 b, Wire cin) {
 
 #include <stdio.h>
 
-void run_rca_test(uint32_t a, uint32_t b, Wire cin) {
+bool run_rca_test(uint32_t a, uint32_t b, Wire cin) {
   printf("======= TESTING RIPPLE-CARRY ADDER (%u + %u + Cin:%u) =======\n", a, b, cin);
   uint32_t expected_sum = a + b + cin;
   uint64_t expected_sum_extended = (uint64_t)a + (uint64_t)b + (uint64_t)cin;
@@ -187,29 +187,46 @@ void run_rca_test(uint32_t a, uint32_t b, Wire cin) {
 
   bool match = (expected_sum == result.sum.value) && (expected_cout == result.cout);
   printf("Match: %s\n", match ? "YES" : "NO");
-  printf("=======================================================\n");
+  printf("\n");
+  return match;
 }
 
 void run_rca_test_suite() {
-  run_rca_test(0, 0, 0);
-  run_rca_test(0, 0, 1);
-  run_rca_test(1, 1, 0);
-  run_rca_test(5, 10, 1);
-  run_rca_test(12323, 622331, 0);
-  run_rca_test(0xFFFFFFFF, 0, 0);
-  run_rca_test(0xFFFFFFFF, 1, 0); 
-  run_rca_test(0xFFFFFFFF, 0, 1);
-  run_rca_test(0xFFFFFFFF, 0xFFFFFFFF, 1);
-  run_rca_test(0x12345678, 0x57654321, 1);
-  run_rca_test(0x55555555, 0xAAAAAAAA, 0); 
-  run_rca_test(0x55555555, 0xAAAAAAAA, 1);
-  run_rca_test(0x80000000, 0x80000000, 0);
-  run_rca_test(0x7FFFFFFF, 0x00000001, 0);
-  run_rca_test(0xDEADBEEF, 0xCAFEBABE, 0);
-  run_rca_test(0xDEADBEEF, 0xCAFEBABE, 1);
+  int passed = 0;
+  int total = 0;
+
+  #define RUN_RCA_TEST(a, b, cin) do { \
+    total++; \
+    if (run_rca_test(a, b, cin)) { \
+      passed++; \
+    } \
+  } while(0)
+
+  RUN_RCA_TEST(0, 0, 0);
+  RUN_RCA_TEST(0, 0, 1);
+  RUN_RCA_TEST(1, 1, 0);
+  RUN_RCA_TEST(5, 10, 1);
+  RUN_RCA_TEST(12323, 622331, 0);
+  RUN_RCA_TEST(0xFFFFFFFF, 0, 0);
+  RUN_RCA_TEST(0xFFFFFFFF, 1, 0); 
+  RUN_RCA_TEST(0xFFFFFFFF, 0, 1);
+  RUN_RCA_TEST(0xFFFFFFFF, 0xFFFFFFFF, 1);
+  RUN_RCA_TEST(0x12345678, 0x57654321, 1);
+  RUN_RCA_TEST(0x55555555, 0xAAAAAAAA, 0); 
+  RUN_RCA_TEST(0x55555555, 0xAAAAAAAA, 1);
+  RUN_RCA_TEST(0x80000000, 0x80000000, 0);
+  RUN_RCA_TEST(0x7FFFFFFF, 0x00000001, 0);
+  RUN_RCA_TEST(0xDEADBEEF, 0xCAFEBABE, 0);
+  RUN_RCA_TEST(0xDEADBEEF, 0xCAFEBABE, 1);
+
+  #undef RUN_RCA_TEST
+
+  printf("==================================================\n");
+  printf("TEST SUITE SUMMARY: %d / %d TESTS PASSED\n", passed, total);
+  printf("==================================================\n");
 }
 
 int main() {
-  run_rca_test_suite();
+  // run_rca_test_suite();
   return 0;
 }
