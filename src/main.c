@@ -137,8 +137,8 @@ FAResult full_adder(Wire a, Wire b, Wire cin) {
 ////////////////////////////////////////////////////////////
 RCAResult ripple_carry_adder(Wire32 a, Wire32 b, Wire cin) {
   #define RCA_STAGE(i, carry_in) \
-  FAResult fa_##i = full_adder(_wire32_get(a, i), _wire32_get(b, i), carry_in); \
-  _wire32_set(&sum, i, fa_##i.sum);
+    FAResult fa_##i = full_adder(_wire32_get(a, i), _wire32_get(b, i), carry_in); \
+    _wire32_set(&sum, i, fa_##i.sum);
 
   Wire32 sum;
   
@@ -159,15 +159,41 @@ RCAResult ripple_carry_adder(Wire32 a, Wire32 b, Wire cin) {
 
 ////////////////////////////////////////////////////////////
 SBTResult subtractor(Wire32 a, Wire32 b) {
-  Wire32 inv_b = not_gate32(b);
-  RCAResult rca = ripple_carry_adder(a, inv_b, 1);
+  RCAResult rca = ripple_carry_adder(a, not_gate32(b), 1);
   return (SBTResult){rca.sum, rca.cout};
 }
 
 
 ////////////////////////////////////////////////////////////
-Wire32 shift_left32(Wire32 x, Wire32 amt) {
-  
+Wire32 shift_left32(Wire32 x, Wire shamt0, Wire shamt1, Wire shamt2, Wire shamt3, Wire shamt4)
+{
+  #define CONCAT(a, b) a##b
+
+  #define MUX2(out, i, prev, shamt, control) \
+    _wire32_set(&out, i, mux2(_wire32_get(prev, i), (i < shamt) ? 0 : _wire32_get(prev, (i - shamt)), control))
+
+  #define PHASE(out, prev, shamt, control) \
+    Wire32 out = 0; \
+    MUX2(out, 0,  prev, shamt, control); MUX2(out, 1,  prev, shamt, control); MUX2(out, 2,  prev, shamt, control); MUX2(out, 3,  prev, shamt, control); \
+    MUX2(out, 4,  prev, shamt, control); MUX2(out, 5,  prev, shamt, control); MUX2(out, 6,  prev, shamt, control); MUX2(out, 7,  prev, shamt, control); \
+    MUX2(out, 8,  prev, shamt, control); MUX2(out, 9,  prev, shamt, control); MUX2(out, 10, prev, shamt, control); MUX2(out, 11, prev, shamt, control); \
+    MUX2(out, 12, prev, shamt, control); MUX2(out, 13, prev, shamt, control); MUX2(out, 14, prev, shamt, control); MUX2(out, 15, prev, shamt, control); \
+    MUX2(out, 16, prev, shamt, control); MUX2(out, 17, prev, shamt, control); MUX2(out, 18, prev, shamt, control); MUX2(out, 19, prev, shamt, control); \
+    MUX2(out, 20, prev, shamt, control); MUX2(out, 21, prev, shamt, control); MUX2(out, 22, prev, shamt, control); MUX2(out, 23, prev, shamt, control); \
+    MUX2(out, 24, prev, shamt, control); MUX2(out, 25, prev, shamt, control); MUX2(out, 26, prev, shamt, control); MUX2(out, 27, prev, shamt, control); \
+    MUX2(out, 28, prev, shamt, control); MUX2(out, 29, prev, shamt, control); MUX2(out, 30, prev, shamt, control); MUX2(out, 31, prev, shamt, control);
+    
+  PHASE(p1, x, 1, shamt0);
+  PHASE(p2, p1, 2, shamt1);
+  PHASE(p3, p2, 4, shamt2);
+  PHASE(p4, p3, 8, shamt3);
+  PHASE(p5, p4, 16, shamt4);
+
+  #undef PHASE
+  #undef MUX2
+  #undef CONCAT
+
+  return p5;
 }
 
 
@@ -177,7 +203,11 @@ Wire32 shift_left32(Wire32 x, Wire32 amt) {
 // 0001 addu   0101 or     1001 sltu   1101 lui
 // 0010 sub    0110 xor    1010 sll    1110 *not used*
 // 0011 subu   0111 nor    1011 srl    1111 *not used*
-ALUResult alu(Wire32 a, Wire32 b, Wire op0, Wire op1, Wire op2, Wire op3) {
+ALUResult alu(
+  Wire32 a, Wire32 b, 
+  Wire shamt0, Wire shamt1, Wire shamt2, Wire shamt3, Wire shamt4, 
+  Wire op0, Wire op1, Wire op2, Wire op3) 
+{
   // General computation
   RCAResult rca = ripple_carry_adder(a, b, 0);
   SBTResult sbt = subtractor(a, b);
@@ -206,4 +236,5 @@ ALUResult alu(Wire32 a, Wire32 b, Wire op0, Wire op1, Wire op2, Wire op3) {
   Wire32 slt = (Wire32)less_than_signed;
   Wire32 sltu = (Wire32)less_than_unsigned;
 
+  Wire32 sll = shift_left32(b, shamt0, shamt1, shamt2, shamt3, shamt4);
 }

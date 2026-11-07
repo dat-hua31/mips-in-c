@@ -82,28 +82,31 @@ Wire32 xnor_gate32(Wire32 a, Wire32 b);   // Return a XNOR b (32-bit)
 ////////////////////////////////////////////////////////////
 
 // 1-bit Multiplexers
-Wire mux2(Wire d0, Wire d1, Wire s);
-Wire mux4(Wire d0, Wire d1, Wire d2, Wire d3, Wire s0, Wire s1);
+Wire mux2(Wire d0, Wire d1, Wire s);                              // Return 2-to-1 multiplexer result
+Wire mux4(Wire d0, Wire d1, Wire d2, Wire d3, Wire s0, Wire s1);  // Return 4-to-1 multiplexer result
 
 // 32-bit Multiplexers
-Wire32 mux2_32(Wire32 d0, Wire32 d1, Wire s);
-Wire32 mux4_32(Wire32 d0, Wire32 d1, Wire32 d2, Wire32 d3, Wire s0, Wire s1);
+Wire32 mux2_32(Wire32 d0, Wire32 d1, Wire s);                                   // Return 2-to-1 multiplexer result
+Wire32 mux4_32(Wire32 d0, Wire32 d1, Wire32 d2, Wire32 d3, Wire s0, Wire s1);   // Return 4-to-1 multiplexer result
 Wire32 mux16_32(Wire32 d0, Wire32 d1, Wire32 d2, Wire32 d3,
                 Wire32 d4, Wire32 d5, Wire32 d6, Wire32 d7,
                 Wire32 d8, Wire32 d9, Wire32 d10, Wire32 d11,
                 Wire32 d12, Wire32 d13, Wire32 d14, Wire32 d15,
-                Wire s0, Wire s1, Wire s2, Wire s3);
+                Wire s0, Wire s1, Wire s2, Wire s3);        // Return 16-to-1 multiplexer result
 
 // Adders
-FAResult  full_adder(Wire a, Wire b, Wire cin);
-RCAResult ripple_carry_adder(Wire32 a, Wire32 b, Wire cin);
-SBTResult subtractor(Wire32 a, Wire32 b);
+FAResult  full_adder(Wire a, Wire b, Wire cin);             // Return full adder result
+RCAResult ripple_carry_adder(Wire32 a, Wire32 b, Wire cin); // Return 32-bit ripple-carry adder result
+SBTResult subtractor(Wire32 a, Wire32 b);                   // Return 32-bit subtractor result
 
 // Shifters
-Wire32 shift_left32(Wire32 x, Wire32 amt);
-Wire32 shift_right32(Wire32 x, Wire32 amt);
+Wire32 shift_left32(Wire32 x, Wire shamt0, Wire shamt1, Wire shamt2, Wire shamt3, Wire shamt4);  // Return 32-bit left shift result
+Wire32 shift_right32(Wire32 x, Wire shamt0, Wire shamt1, Wire shamt2, Wire shamt3, Wire shamt4); // Return 32-bit right shift result
 
 // ALU
-ALUResult alu(Wire32 a, Wire32 b, Wire op0, Wire op1, Wire op2, Wire op3);
+ALUResult alu(
+  Wire32 a, Wire32 b, 
+  Wire shamt0, Wire shamt1, Wire shamt2, Wire shamt3, Wire shamt4, 
+  Wire op0, Wire op1, Wire op2, Wire op3);                  // Return 32-bit ALU result
 
 #endif // MAIN_H
