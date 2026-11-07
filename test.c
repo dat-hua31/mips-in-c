@@ -57,6 +57,23 @@ void run_rca_test_suite() {
   printf("--- RCA SUMMARY: %d / %d PASSED ---\n\n", passed, total);
 }
 
+bool run_shift_left_test(Wire32 x, Wire shamt0, Wire shamt1, Wire shamt2, Wire shamt3, Wire shamt4) {
+  uint32_t shift_amt = (uint32_t)shamt0 | 
+                       ((uint32_t)shamt1 << 1) | 
+                       ((uint32_t)shamt2 << 2) | 
+                       ((uint32_t)shamt3 << 3) | 
+                       ((uint32_t)shamt4 << 4);
+  
+  uint32_t expected = (uint32_t)x << shift_amt;
+
+  Wire32 result = shift_left32(x, shamt0, shamt1, shamt2, shamt3, shamt4);
+  bool match = (expected == (uint32_t)result);
+
+  printf("[%s] shift_left32(x=0x%08X, shamt=%2u) [bits: %u %u %u %u %u] -> result=0x%08X, expected=0x%08X\n", 
+         match ? "PASS" : "FAIL", (uint32_t)x, shift_amt, shamt4, shamt3, shamt2, shamt1, shamt0, (uint32_t)result, expected);
+  return match;
+}
+
 void run_sbt_test_suite() {
   int passed = 0, total = 0;
 
@@ -86,19 +103,55 @@ void run_sbt_test_suite() {
   printf("--- SBT SUMMARY: %d / %d PASSED ---\n\n", passed, total);
 }
 
+void run_shift_left_test_suite() {
+  int passed = 0, total = 0;
+
+  #define RUN_SHIFT_TEST(x, s4, s3, s2, s1, s0) do { \
+    total++; \
+    if (run_shift_left_test(x, s0, s1, s2, s3, s4)) passed++; \
+  } while(0)
+
+  RUN_SHIFT_TEST(0x12345678, 0, 0, 0, 0, 0);
+  RUN_SHIFT_TEST(0xFFFFFFFF, 0, 0, 0, 0, 0);
+  RUN_SHIFT_TEST(0x00000001, 0, 0, 0, 0, 1);
+  RUN_SHIFT_TEST(0x00000001, 0, 0, 0, 1, 0);
+  RUN_SHIFT_TEST(0x00000001, 0, 0, 1, 0, 0);
+  RUN_SHIFT_TEST(0x00000001, 0, 1, 0, 0, 0);
+  RUN_SHIFT_TEST(0x00000001, 1, 0, 0, 0, 0);
+  RUN_SHIFT_TEST(0x00000001, 0, 0, 0, 1, 1);
+  RUN_SHIFT_TEST(0x00000001, 0, 0, 1, 1, 1);
+  RUN_SHIFT_TEST(0x00000001, 0, 1, 1, 1, 1);
+  RUN_SHIFT_TEST(0x00000001, 1, 1, 1, 1, 1);
+  RUN_SHIFT_TEST(0xDEADBEEF, 0, 0, 0, 1, 0);
+  RUN_SHIFT_TEST(0x55555555, 0, 0, 1, 0, 0);
+  RUN_SHIFT_TEST(0x80000000, 0, 0, 0, 0, 1);
+  RUN_SHIFT_TEST(0x0000FFFF, 0, 1, 0, 0, 0);
+
+  #undef RUN_SHIFT_TEST
+
+  printf("--- SHIFT LEFT SUMMARY: %d / %d PASSED ---\n\n", passed, total);
+}
+
 int main(int argc, char *argv[]) {
   bool run_rca = false;
   bool run_sbt = false;
+  bool run_shift = false;
+
   if (argc < 2) {
     run_rca = true;
     run_sbt = true;
+    run_shift = true;
   } else {
     for (int i = 1; i < argc; i++) {
       if (strcmp(argv[i], "-rca") == 0) run_rca = true;
       if (strcmp(argv[i], "-sbt") == 0) run_sbt = true;
+      if (strcmp(argv[i], "-shift") == 0) run_shift = true;
     }
   }
+
   if (run_rca) run_rca_test_suite();
   if (run_sbt) run_sbt_test_suite();
+  if (run_shift) run_shift_left_test_suite();
+
   return 0;
 }
