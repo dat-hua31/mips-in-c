@@ -108,6 +108,9 @@ Wire mux4(Wire d0, Wire d1, Wire d2, Wire d3, Wire s0, Wire s1) {
 Wire32 mux4_32(Wire32 d0, Wire32 d1, Wire32 d2, Wire32 d3, Wire s0, Wire s1) {
   return mux2_32(mux2_32(d0, d1, s0), mux2_32(d2, d3, s0), s1);
 }
+
+
+////////////////////////////////////////////////////////////
 Wire32 mux16_32(Wire32 d0, Wire32 d1, Wire32 d2, Wire32 d3,
                 Wire32 d4, Wire32 d5, Wire32 d6, Wire32 d7,
                 Wire32 d8, Wire32 d9, Wire32 d10, Wire32 d11,
@@ -133,16 +136,24 @@ FAResult full_adder(Wire a, Wire b, Wire cin) {
 
 ////////////////////////////////////////////////////////////
 RCAResult ripple_carry_adder(Wire32 a, Wire32 b, Wire cin) {
+  #define RCA_STAGE(i, carry_in) \
+  FAResult fa_##i = full_adder(_wire32_get(a, i), _wire32_get(b, i), carry_in); \
+  _wire32_set(&sum, i, fa_##i.sum);
+
   Wire32 sum;
-  Wire carry = cin;
-  for (int i = 0; i < 32; i++) {
-    Wire bit_a = _wire32_get(a, i);
-    Wire bit_b = _wire32_get(b, i);
-    FAResult fa = full_adder(bit_a, bit_b, carry);
-    _wire32_set(&sum, i, fa.sum);
-    carry = fa.cout;
-  }
-  return (RCAResult){sum, carry};
+  
+  RCA_STAGE(0, cin);         RCA_STAGE(1, fa_0.cout);   RCA_STAGE(2, fa_1.cout);   RCA_STAGE(3, fa_2.cout);
+  RCA_STAGE(4, fa_3.cout);   RCA_STAGE(5, fa_4.cout);   RCA_STAGE(6, fa_5.cout);   RCA_STAGE(7, fa_6.cout);
+  RCA_STAGE(8, fa_7.cout);   RCA_STAGE(9, fa_8.cout);   RCA_STAGE(10, fa_9.cout);  RCA_STAGE(11, fa_10.cout);
+  RCA_STAGE(12, fa_11.cout); RCA_STAGE(13, fa_12.cout); RCA_STAGE(14, fa_13.cout); RCA_STAGE(15, fa_14.cout);
+  RCA_STAGE(16, fa_15.cout); RCA_STAGE(17, fa_16.cout); RCA_STAGE(18, fa_17.cout); RCA_STAGE(19, fa_18.cout);
+  RCA_STAGE(20, fa_19.cout); RCA_STAGE(21, fa_20.cout); RCA_STAGE(22, fa_21.cout); RCA_STAGE(23, fa_22.cout);
+  RCA_STAGE(24, fa_23.cout); RCA_STAGE(25, fa_24.cout); RCA_STAGE(26, fa_25.cout); RCA_STAGE(27, fa_26.cout);
+  RCA_STAGE(28, fa_27.cout); RCA_STAGE(29, fa_28.cout); RCA_STAGE(30, fa_29.cout); RCA_STAGE(31, fa_30.cout);
+
+  #undef RCA_STAGE
+
+  return (RCAResult){sum, fa_31.cout};
 }
 
 
@@ -155,4 +166,44 @@ SBTResult subtractor(Wire32 a, Wire32 b) {
 
 
 ////////////////////////////////////////////////////////////
-ALUResult alu(Wire32 a, Wire32 b, Wire op0, Wire op1, Wire op2, Wire op3);
+Wire32 shift_left32(Wire32 x, Wire32 amt) {
+  
+}
+
+
+////////////////////////////////////////////////////////////
+// Opcode Encoding op3 op2 op1 op0
+// 0000 add    0100 and    1000 slt    1100 sra
+// 0001 addu   0101 or     1001 sltu   1101 lui
+// 0010 sub    0110 xor    1010 sll    1110 *not used*
+// 0011 subu   0111 nor    1011 srl    1111 *not used*
+ALUResult alu(Wire32 a, Wire32 b, Wire op0, Wire op1, Wire op2, Wire op3) {
+  // General computation
+  RCAResult rca = ripple_carry_adder(a, b, 0);
+  SBTResult sbt = subtractor(a, b);
+  Wire32 and = and_gate32(a, b);
+  Wire32 or = or_gate32(a, b);
+  Wire32 xor = xor_gate32(a, b);
+  Wire32 nor = nor_gate32(a, b);
+
+  // Extract sign bits
+  Wire a_sign_bit = _wire32_get(a, 31);
+  Wire b_sign_bit = _wire32_get(b, 31);
+  Wire sum_sign_bit = _wire32_get(rca.sum, 31);
+  Wire diff_sign_bit = _wire32_get(sbt.diff, 31);
+
+  // Overflow for add, sub
+  // add: Operands share a sign, but result's sign differs.
+  // sub: Operands differ in sign, result's sign differs from a.
+  Wire add_overflow = and_gate(xnor_gate(a_sign_bit, b_sign_bit), xor_gate(a_sign_bit, sum_sign_bit));
+  Wire sub_overflow = and_gate(xor_gate(a_sign_bit, b_sign_bit), xor_gate(a_sign_bit, diff_sign_bit));
+
+  // Set-on-less-than
+  // slt (signed): check the difference sign bit, but use XOR to invert when overflow occurs.
+  // slt (unsigned): just use the carry-out bit.
+  Wire less_than_signed = xor_gate(diff_sign_bit, sub_overflow);
+  Wire less_than_unsigned = not_gate(sbt.cout);
+  Wire32 slt = (Wire32)less_than_signed;
+  Wire32 sltu = (Wire32)less_than_unsigned;
+
+}
